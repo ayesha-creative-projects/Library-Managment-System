@@ -1,388 +1,613 @@
 #include <iostream>
-#include <fstream>      // For file handling
-#include <string>        // For using string datatype
-#include <algorithm>      
+#include <string>
 using namespace std;
 
-//================================================================================//
-//                                                                                //
-//                  LIBRARY MANAGEMENT SYSTEM                                     //
-//                                                                                //
-//       Program starts:  shows menu (do-while).                                  //
-//       User chooses an option: switch-case runs the right function.             //
-//       Functions add, delete, modify, search, sort, borrow, return, display.    //
-//       Library keeps track of all books in books[MAX] array.                    //
-//       Program repeats menu until user enters 0 → exit.                         //
-//       File handling: save/load books                                          //
-//                                                                                //
-//================================================================================//
+const int MAX_RESOURCES = 50;
+const int MAX_MEMBERS = 50;
+const int MAX_BORROWED = 20;
 
+class Library;
+class LibraryMember;
 
-// Maximum books that can be stored
-const int MAX = 100;
+// ============================================================
+//  Base Class: LibraryResource
+// ============================================================
+class LibraryResource
+{
+    friend void adminView(const Library &lib, const LibraryMember members[], int memberCount);
 
-// Structure to store book information
-struct Book {
-    string title;       
-    string isbn;               // Book ISBN (as string because it can have dashes)
-    string author;      
-    string publisher;   
-    int copies;         
-    int edition;        
+protected:
+    int resourceID;
+    string title;
+    string author;
+    bool isAvailable;
+
+public:
+    LibraryResource()
+        : resourceID(0), title(""), author(""), isAvailable(true) {}
+
+    LibraryResource(int id, string t, string a, bool avail = true)
+        : resourceID(id), title(t), author(a), isAvailable(avail) {}
+
+    int getResourceID() const { return resourceID; }
+    string getTitle() const { return title; }
+    string getAuthor() const { return author; }
+    bool getIsAvailable() const { return isAvailable; }
+
+    // this pointer usage #1: setter distinguishes parameter from member variable
+    void setResourceID(int resourceID) { this->resourceID = resourceID; }
+    void setTitle(string title) { this->title = title; }
+    void setAuthor(string author) { this->author = author; }
+    void setIsAvailable(bool isAvailable) { this->isAvailable = isAvailable; }
+
+    void displayDetails() const
+    {
+        cout << "  ID     : " << resourceID << "\n"
+             << "  Title  : " << title << "\n"
+             << "  Author : " << author << "\n"
+             << "  Status : " << (isAvailable ? "Available" : "Borrowed") << "\n";
+    }
+
+    double calculateLateFee(int daysLate) const
+    {
+        return daysLate * 1.0; // base rate: Rs. 1/day
+    }
 };
 
+// ============================================================
+//  Derived Class: Book
+//  Function hiding: re-declares calculateLateFee & displayDetails
+//  without virtual/override — hides the base class versions
+// ============================================================
+class Book : public LibraryResource
+{
+private:
+    string ISBN;
+    int pageCount;
 
-Book books[MAX];                 // Array to store all books (global variable so all functions can access)
-int totalBooks = 0;             // Variable to keep track of total books currently in library
+public:
+    Book() : LibraryResource(), ISBN(""), pageCount(0) {}
+    Book(int id, string t, string a, string isbn, int pages)
+        : LibraryResource(id, t, a, true), ISBN(isbn), pageCount(pages) {}
 
-// Function prototypes (declaring functions before main)
-void saveToFile();
-void loadFromFile();
-void addBook();
-void displayBooks();
-void deleteBook();
-void modifyBook();
-void searchBookByISBN();
-void searchBookByTitle();
-void sortByTitle();
-void sortByEdition();
-void borrowBook();
-void returnBook();
+    string getISBN() const { return ISBN; }
+    int getPageCount() const { return pageCount; }
 
-// ------------------------- MAIN MENU -------------------------
-int main() {
-    loadFromFile();                         // Load books when program starts
+    // this pointer usage #2: setter returns *this for method chaining
+    Book &setISBN(string isbn)
+    {
+        this->ISBN = isbn; // 'this' distinguishes member from parameter
+        return *this;      // returns current object for chaining
+    }
+    void setPageCount(int pageCount) { this->pageCount = pageCount; }
 
-    int choice;                            //do-while(choice != 0); shows the menu repeatedly
-    do {
-       cout << "\n===== LIBRARY MANAGEMENT SYSTEM =====\n";
-        cout << "1. Add Book\n";
-        cout << "2. Delete Book\n";
-        cout << "3. Modify Book\n";
-        cout << "4. Search by ISBN\n";
-        cout << "5. Search by Title\n";
-        cout << "6. Sort by Title\n";
-        cout << "7. Sort Books (same title) by Edition\n";
-        cout << "8. Borrow Book\n";
-        cout << "9. Return Book\n";
-        cout << "10. Display All Books\n";
-        cout << "0. Exit\n";                  // until user exits 0
-        cout << "\nEnter choice: ";
+    // Function hiding (no override keyword) — hides LibraryResource::calculateLateFee
+    double calculateLateFee(int daysLate) const
+    {
+        return daysLate * 5.0; // Rs. 5/day for books
+    }
+
+    // Function hiding — hides LibraryResource::displayDetails
+    void displayDetails() const
+    {
+        cout << "  [Book]\n";
+        LibraryResource::displayDetails(); // explicitly call base version
+        cout << "  ISBN   : " << ISBN << "\n"
+             << "  Pages  : " << pageCount << "\n";
+    }
+};
+
+// ============================================================
+//  Derived Class: Magazine
+//  Function hiding: hides base calculateLateFee & displayDetails
+// ============================================================
+class Magazine : public LibraryResource
+{
+private:
+    int issueNumber;
+
+public:
+    Magazine() : LibraryResource(), issueNumber(0) {}
+    Magazine(int id, string t, string a, int issue)
+        : LibraryResource(id, t, a, true), issueNumber(issue) {}
+
+    int getIssueNumber() const { return issueNumber; }
+    void setIssueNumber(int issueNumber) { this->issueNumber = issueNumber; }
+
+    // Function hiding — hides LibraryResource::calculateLateFee
+    double calculateLateFee(int daysLate) const
+    {
+        return daysLate * 3.0; // Rs. 3/day for magazines
+    }
+
+    // Function hiding — hides LibraryResource::displayDetails
+    void displayDetails() const
+    {
+        cout << "  [Magazine]\n";
+        LibraryResource::displayDetails();
+        cout << "  Issue  : " << issueNumber << "\n";
+    }
+};
+
+// ============================================================
+//  Derived Class: DVD
+//  Function hiding: hides base calculateLateFee & displayDetails
+// ============================================================
+class DVD : public LibraryResource
+{
+private:
+    int duration;
+
+public:
+    DVD() : LibraryResource(), duration(0) {}
+    DVD(int id, string t, string a, int dur)
+        : LibraryResource(id, t, a, true), duration(dur) {}
+
+    int getDuration() const { return duration; }
+    void setDuration(int duration) { this->duration = duration; }
+
+    // Function hiding — hides LibraryResource::calculateLateFee
+    double calculateLateFee(int daysLate) const
+    {
+        return daysLate * 10.0; // Rs. 10/day for DVDs
+    }
+
+    // Function hiding — hides LibraryResource::displayDetails
+    void displayDetails() const
+    {
+        cout << "  [DVD]\n";
+        LibraryResource::displayDetails();
+        cout << "  Dur(m) : " << duration << "\n";
+    }
+};
+
+// ============================================================
+//  LibraryMember  (Composition with LibraryResource)
+// ============================================================
+class LibraryMember
+{
+    friend void adminView(const Library &lib, const LibraryMember members[], int memberCount);
+
+private:
+    int memberID;
+    string name;
+    LibraryResource borrowedItems[MAX_BORROWED]; // by value = composition
+    int borrowCount;
+
+public:
+    LibraryMember() : memberID(0), name(""), borrowCount(0) {}
+    LibraryMember(int id, string n) : memberID(id), name(n), borrowCount(0) {}
+
+    int getMemberID() const { return memberID; }
+    string getName() const { return name; }
+    int getBorrowCount() const { return borrowCount; }
+
+    // this pointer: returns *this for method chaining
+    LibraryMember &setName(string name)
+    {
+        this->name = name; // 'this' distinguishes member from parameter
+        return *this;
+    }
+    LibraryMember &setMemberID(int memberID)
+    {
+        this->memberID = memberID;
+        return *this;
+    }
+
+    bool borrowResource(LibraryResource res)
+    {
+        if (borrowCount >= MAX_BORROWED)
+        {
+            cout << "  Error: Borrow limit (" << MAX_BORROWED << ") reached.\n";
+            return false;
+        }
+        res.setIsAvailable(false);
+        borrowedItems[borrowCount] = res;
+        borrowCount++;
+        return true;
+    }
+
+    bool returnResource(int resourceID)
+    {
+        for (int i = 0; i < borrowCount; i++)
+        {
+            if (borrowedItems[i].getResourceID() == resourceID)
+            {
+                for (int j = i; j < borrowCount - 1; j++)
+                    borrowedItems[j] = borrowedItems[j + 1];
+                borrowCount--;
+                return true;
+            }
+        }
+        cout << "  Error: Resource ID " << resourceID
+             << " not found in your borrowed list.\n";
+        return false;
+    }
+
+    void displayBorrowedItems() const
+    {
+        if (borrowCount == 0)
+        {
+            cout << "  No borrowed items.\n";
+            return;
+        }
+        for (int i = 0; i < borrowCount; i++)
+        {
+            borrowedItems[i].displayDetails();
+            cout << "  -------------------\n";
+        }
+    }
+
+     // Loops through all borrowed items and sums up their individual late fees.
+    // Calls calculateLateFee() on each LibraryResource object in the array.
+
+    double calculateTotalLateFee(int daysLate) const
+    {
+        double total = 0;
+        for (int i = 0; i < borrowCount; i++)
+            total += borrowedItems[i].calculateLateFee(daysLate);
+        return total;
+    }
+
+    bool hasBorrowed(int resourceID) const
+    {
+        for (int i = 0; i < borrowCount; i++)
+            if (borrowedItems[i].getResourceID() == resourceID)
+                return true;
+        return false;
+    }
+};
+
+// ============================================================
+//  Library
+// ============================================================
+class Library
+{
+    friend void adminView(const Library &lib, const LibraryMember members[], int memberCount);
+
+private:
+    LibraryResource resources[MAX_RESOURCES];
+    int resourceCount;
+
+public:
+    Library() : resourceCount(0) {}
+
+    bool addResource(const LibraryResource &res)
+    {
+        if (resourceCount >= MAX_RESOURCES)
+        {
+            cout << "  Error: Library is full.\n";
+            return false;
+        }
+        resources[resourceCount++] = res;
+        return true;
+    }
+
+    int findResourceIndex(int id) const
+    {
+        for (int i = 0; i < resourceCount; i++)
+            if (resources[i].getResourceID() == id)
+                return i;
+        return -1;
+    }
+
+        // Returns a pointer to the resource with the given ID, or nullptr if not found
+    LibraryResource *getResource(int id)
+    {
+        int idx = findResourceIndex(id);
+        return (idx == -1) ? nullptr : &resources[idx];
+    }
+
+    bool setAvailability(int id, bool avail)
+    {
+        int idx = findResourceIndex(id);
+        if (idx == -1)
+            return false;
+        resources[idx].setIsAvailable(avail);
+        return true;
+    }
+
+    void displayAllResources() const
+    {
+        if (resourceCount == 0)
+        {
+            cout << "  No resources in library.\n";
+            return;
+        }
+        for (int i = 0; i < resourceCount; i++)
+        {
+            resources[i].displayDetails();
+            cout << "  -------------------\n";
+        }
+    }
+};
+
+// ============================================================
+//  Friend Function: adminView
+// ============================================================
+void adminView(const Library &lib, const LibraryMember members[], int memberCount)
+{
+    cout << "\n========== ADMIN VIEW ==========\n";
+
+    cout << "\n--- All Library Resources ---\n";
+    if (lib.resourceCount == 0)
+        cout << "  (none)\n";
+    else
+        for (int i = 0; i < lib.resourceCount; i++)
+            cout << "  ID: " << lib.resources[i].resourceID
+                 << "  Title: " << lib.resources[i].title
+                 << "  Avail: " << (lib.resources[i].isAvailable ? "Yes" : "No") << "\n";
+    // Directly access members[i].memberID, .name, .borrowedItems, .borrowCount
+    // — allowed because LibraryMember declared adminView as a friend
+    cout << "\n--- All Registered Members ---\n";
+    if (memberCount == 0)
+        cout << "  (none)\n";
+    else
+        for (int i = 0; i < memberCount; i++)
+        {
+            cout << "  MemberID: " << members[i].memberID
+                 << "  Name: " << members[i].name << "\n"
+                 << "  Borrowed:\n";
+            if (members[i].borrowCount == 0)
+                cout << "    (none)\n";
+            else
+                for (int j = 0; j < members[i].borrowCount; j++)     // Accessing private fields of borrowedItems directly
+                    cout << "    - [" << members[i].borrowedItems[j].resourceID
+                         << "] " << members[i].borrowedItems[j].title << "\n";
+        }
+    cout << "================================\n";
+}
+
+int findMemberIndex(const LibraryMember members[], int count, int id)
+{
+    for (int i = 0; i < count; i++)
+        if (members[i].getMemberID() == id)
+            return i;
+    return -1;
+}
+// ============================================================
+//  main() — Menu-driven interface for the Library System
+// ============================================================
+int main() 
+{
+    Library library;
+    LibraryMember members[MAX_MEMBERS];
+    int memberCount = 0;
+    int choice;
+
+    cout << "===================================\n"
+         << "   Library Management System\n"
+         << "===================================\n";
+
+    do
+    {
+        cout << "\n--- MAIN MENU ---\n"
+             << "1. Add a new Resource\n"
+             << "2. Register a new Member\n"
+             << "3. Borrow a Resource\n"
+             << "4. Return a Resource\n"
+             << "5. Display all Resources\n"
+             << "6. Display Member's Borrowed Items\n"
+             << "7. Calculate Late Fee\n"
+             << "8. Admin View\n"
+             << "9. Exit\n"
+             << "Enter choice: ";
         cin >> choice;
+        cin.ignore();
 
-        switch (choice) {                      //switch(choice) executes the function corresponding to the choice:
-        case 1: addBook(); break;
-        case 2: deleteBook(); break;
-        case 3: modifyBook(); break;
-        case 4: searchBookByISBN(); break;
-        case 5: searchBookByTitle(); break;
-        case 6: sortByTitle(); break;
-        case 7: sortByEdition(); break;
-        case 8: borrowBook(); break;
-        case 9: returnBook(); break;
-        case 10: displayBooks(); break;
-        case 0: cout << "\nExiting...!!\nThanks for using my Library Management System :) \n"; break;
-        default: cout << "\nInvalid choice!\n";       // default: if the user enters a number not in the menu, it shows “Invalid choice!”.
+        // ---- Option 1: Add a Resource ----
+        if (choice == 1)
+        {
+            int type;
+            cout << "Resource type (1=Book  2=Magazine  3=DVD): ";
+            cin >> type;
+            cin.ignore();
+
+            // Validate type FIRST before asking anything else
+            if (type != 1 && type != 2 && type != 3)
+            {
+                cout << "  Error: Invalid resource type. Please enter 1, 2, or 3.\n";
+                continue;
+            }
+
+            int id;
+            string title, author;
+            cout << "Resource ID  : ";
+            cin >> id;
+            cin.ignore();
+            if (library.findResourceIndex(id) != -1)
+            {
+                cout << "  Error: Resource ID already exists.\n";
+                continue;
+            }
+
+            cout << "Title        : ";
+            getline(cin, title);
+            cout << "Author/Studio: ";
+            getline(cin, author);
+
+            if (type == 1)
+            {
+                string isbn;
+                int pages;
+                cout << "ISBN         : ";
+                getline(cin, isbn);
+                cout << "Page Count   : ";
+                cin >> pages;
+                cin.ignore();
+                 // Book(...) creates a temporary Book object (derived from LibraryResource)
+                // addResource() copies it into the library's resources[] array
+                library.addResource(Book(id, title, author, isbn, pages));
+                cout << "  Book added.\n";
+            }
+            else if (type == 2)
+            {
+                int issue;
+                cout << "Issue Number : ";
+                cin >> issue;
+                cin.ignore();
+                library.addResource(Magazine(id, title, author, issue));
+                cout << "  Magazine added.\n";
+            }
+            else if (type == 3)
+            {
+                int dur;
+                cout << "Duration(min): ";
+                cin >> dur;
+                cin.ignore();
+                library.addResource(DVD(id, title, author, dur));
+                cout << "  DVD added.\n";
+            }
+            else
+                cout << "  Error: Invalid resource type.\n";
         }
-    } while (choice != 0);
 
-    // This combination (do-while + switch) is called menu-driven program.
+        // ---- Option 2: Register a Member ----
+        else if (choice == 2)
+        {
+            if (memberCount >= MAX_MEMBERS)
+            {
+                cout << "  Error: Member limit reached.\n";
+                continue;
+            }
+            int mid;
+            string mname;
+            cout << "Member ID  : ";
+            cin >> mid;
+            cin.ignore();
+            if (findMemberIndex(members, memberCount, mid) != -1)
+            {
+                cout << "  Error: Member ID already exists.\n";
+                continue;
+            }
+            cout << "Member Name: ";
+            getline(cin, mname);
+            members[memberCount++] = LibraryMember(mid, mname);
+            cout << "  Member registered.\n";
+        }
+           // ---- Option 3: Borrow a Resource ----
+        else if (choice == 3)
+        {
+            int mid, rid;
+            cout << "Member ID  : ";
+            cin >> mid;
+            cin.ignore();
+            cout << "Resource ID: ";
+            cin >> rid;
+            cin.ignore();
+            int mIdx = findMemberIndex(members, memberCount, mid);
+            if (mIdx == -1)
+            {
+                cout << "  Error: Member not found.\n";
+                continue;
+            }
+            LibraryResource *res = library.getResource(rid);
+            if (!res)
+            {
+                cout << "  Error: Resource not found.\n";
+                continue;
+            }
+            if (!res->getIsAvailable())
+            {
+                cout << "  Error: Resource is already borrowed.\n";
+                continue;
+            }
+             // Mark unavailable in the library so no one else can borrow it,
+            // then give a copy to the member's borrowedItems[] (composition)
+            library.setAvailability(rid, false);
+            members[mIdx].borrowResource(*res);
+            // *res dereferences pointer to get object
+            cout << "  Resource borrowed successfully.\n";
+        }
 
+          // ---- Option 4: Return a Resource ----
+        else if (choice == 4)
+        {
+            int mid, rid;
+            cout << "Member ID  : ";
+            cin >> mid;
+            cin.ignore();
+            cout << "Resource ID: ";
+            cin >> rid;
+            cin.ignore();
+            int mIdx = findMemberIndex(members, memberCount, mid);
+            if (mIdx == -1)
+            {
+                cout << "  Error: Member not found.\n";
+                continue;
+            }
+
+             // Make sure this member actually borrowed this resource
+            if (!members[mIdx].hasBorrowed(rid))
+            {
+                cout << "  Error: Member has not borrowed resource " << rid << ".\n";
+                continue;
+            }
+            members[mIdx].returnResource(rid);
+            library.setAvailability(rid, true);
+            cout << "  Resource returned successfully.\n";
+        }
+
+        // ---- Option 5: Display All Resources ----
+        else if (choice == 5)
+        {
+            cout << "\n--- All Resources ---\n";
+            library.displayAllResources();
+
+        }
+        // ---- Option 6: Display a Member's Borrowed Items ----
+        else if (choice == 6)
+        {
+            int mid;
+            cout << "Member ID: ";
+            cin >> mid;
+            cin.ignore();
+            int mIdx = findMemberIndex(members, memberCount, mid);
+            if (mIdx == -1)
+            {
+                cout << "  Error: Member not found.\n";
+                continue;
+            }
+            cout << "\n--- Borrowed by " << members[mIdx].getName() << " ---\n";
+            members[mIdx].displayBorrowedItems();
+        }
+        // ---- Option 7: Calculate Late Fee ----
+        else if (choice == 7)
+        {
+            int mid, days;
+            cout << "Member ID  : ";
+            cin >> mid;
+            cin.ignore();
+            cout << "Days Late  : ";
+            cin >> days;
+            cin.ignore();
+            int mIdx = findMemberIndex(members, memberCount, mid);
+            if (mIdx == -1)
+            {
+                cout << "  Error: Member not found.\n";
+                continue;
+            }
+            
+            cout << "  Total Late Fee for " << members[mIdx].getName()
+                 << ": Rs. " << members[mIdx].calculateTotalLateFee(days) << "\n";
+        }
+         // ---- Option 8: Admin View (Friend Function) ----
+        else if (choice == 8)
+        {
+            // Calls the friend function — bypasses encapsulation to show
+            // all private data from Library and LibraryMember directly
+            adminView(library, members, memberCount);
+        }
+        else if (choice == 9)
+        {
+            cout << "  Goodbye!\n"; // Loop condition (choice != 9) becomes false — program ends
+        }
+        else
+        {
+            cout << "  Error: Invalid menu choice.\n";
+        }
+
+    } while (choice != 9);
+    // keep looping until user selects Exit
     return 0;
-}
-
-
-
-// ------------------------- SAVE TO FILE -------------------------
-void saveToFile() {
-    ofstream fout("library.txt");      // Open file for writing
-    fout << totalBooks << endl;        // Save total number of books first
-
-    for (int i = 0; i < totalBooks; i++) {
-        fout << books[i].title << endl;
-        fout << books[i].isbn << endl;
-        fout << books[i].author << endl;
-        fout << books[i].publisher << endl;
-        fout << books[i].copies << endl;
-        fout << books[i].edition << endl;
-    }
-    fout.close();                     // Close the file
-}
-
-// ------------------------- LOAD FROM FILE -------------------------
-void loadFromFile() {
-    ifstream fin("library.txt");       // Open file for reading
-    if (!fin) return;                  // If file doesn't exist, exit function
-
-    fin >> totalBooks;                 // Read total books
-    fin.ignore();                      // Ignore newline
-
-    for (int i = 0; i < totalBooks; i++) {
-        getline(fin, books[i].title);
-        getline(fin, books[i].isbn);
-        getline(fin, books[i].author);
-        getline(fin, books[i].publisher);
-        fin >> books[i].copies;
-        fin >> books[i].edition;
-        fin.ignore();                  // Remove leftover newline
-    }
-    fin.close();                       //Reads the saved file when the program starts
-}                                      // So you don’t lose data after closing the program
-
-// ------------------------- ADD BOOK -------------------------
-void addBook() {
-    if (totalBooks >= MAX) {
-        cout << "\nLibrary is full! Cannot add more books.\n";
-        return;
-    }
-
-    cin.ignore();   // clear leftover newline
-
-    cout << "Enter Title: ";
-    getline(cin, books[totalBooks].title);
-
-    // ===============================
-    // CHECK FOR DUPLICATE ISBN
-    // ===============================
-    string newISBN;
-    while (true) {
-        cout << "Enter ISBN: ";
-        getline(cin, newISBN);
-
-        bool exists = false;
-        for (int i = 0; i < totalBooks; i++) {
-            if (books[i].isbn == newISBN) {
-                exists = true;
-                break;
-            }
-        }
-
-        if (exists) {
-            cout << "\nThis ISBN already exists! Please enter a NEW ISBN.\n";
-        } 
-        else {
-            break;  // valid ISBN → exit loop
-        }
-    }
-
-    books[totalBooks].isbn = newISBN;
-
-    cout << "Enter Author: ";
-    getline(cin, books[totalBooks].author);
-
-    cout << "Enter Publisher: ";
-    getline(cin, books[totalBooks].publisher);
-
-    cout << "Enter Number of Copies: ";
-    cin >> books[totalBooks].copies;
-
-    cout << "Enter Edition: ";
-    cin >> books[totalBooks].edition;
-
-    totalBooks++;        // update count
-    saveToFile();        // save automatically
-
-    cout << "\n Book added successfully!\n";
-}
-
-
-// ------------------------- DISPLAY BOOKS -------------------------
-void displayBooks() {
-    if (totalBooks == 0) {
-        cout << "\nNo books in library. You haven't added any book!\n";
-        return;
-    }
-
-    cout << "\n===== LIST OF BOOKS =====\n";
-
-    for (int i = 0; i < totalBooks; i++) {
-        cout << "\n--Book #" << i + 1 << "--\n";
-        cout << "Title: " << books[i].title << endl;
-        cout << "ISBN: " << books[i].isbn << endl;
-        cout << "Author: " << books[i].author << endl;
-        cout << "Publisher: " << books[i].publisher << endl;
-        cout << "Copies: " << books[i].copies << endl;  // This now reflects the borrowed copies
-        cout << "Edition: " << books[i].edition << endl;
-    }
-}
-
-// ------------------------- DELETE BOOK -------------------------
-// Ask user for ISBN for deletion process.
-void deleteBook() {
-    cin.ignore();
-    string isbn;
-    cout << "Enter ISBN to delete: ";                 //  Deletes a book by ISBN
-    getline(cin, isbn);
-
-    for (int i = 0; i < totalBooks; i++) {
-        if (books[i].isbn == isbn) {
-            books[i] = books[totalBooks - 1];         // Replaces deleted book with the last book in array
-            totalBooks--;                             // Decreases total count
-            saveToFile();
-            cout << "\nBook deleted successfully!\n";
-            return;
-        }
-    }
-   cout << "\nOops! you wrote the wrong ISBN.\n";
-
-}
-
-// ------------------------- MODIFY BOOK -------------------------
-void modifyBook() {                                     // Lets you update all details
-    cin.ignore();
-    string isbn;
-    cout << "Enter ISBN to modify: ";                   // Finds a book by ISBN
-    getline(cin, isbn);
-
-    for (int i = 0; i < totalBooks; i++) {
-        if (books[i].isbn == isbn) {
-            cout << "Enter New Title: ";
-            getline(cin, books[i].title);
-            cout << "Enter New Author: ";
-            getline(cin, books[i].author);
-            cout << "Enter New Publisher: ";
-            getline(cin, books[i].publisher);
-            cout << "Enter New Number of Copies: ";
-            cin >> books[i].copies;
-            cout << "Enter New Edition: ";
-            cin >> books[i].edition;
-            saveToFile();                                // Saves updated record to file
-            cout << "\nBook updated successfully!\n";
-            return;
-        }
-    }
-    cout << "\nBook not found!\n";
-}
-
-// ------------------------- SEARCH BY ISBN -------------------------
-void searchBookByISBN() {
-    cin.ignore();
-    string isbn;
-    cout << "Enter ISBN to search: ";                   // Search exact match for ISBN or title
-    getline(cin, isbn);
-
-    for (int i = 0; i < totalBooks; i++) {
-        if (books[i].isbn == isbn) {
-            cout << "\n---Book Found!---\n";                    //  Displays relevant info if found
-            cout << "Title: " << books[i].title << endl;
-            cout << "Author: " << books[i].author << endl;
-            cout << "Publisher: " << books[i].publisher << endl;
-            cout << "Copies: " << books[i].copies << endl;
-            cout << "Edition: " << books[i].edition << endl;
-            return;
-        }
-    }
-    cout << "\nBook not found!\n";
-}
-
-// ------------------------- SEARCH BY TITLE -------------------------
-// Function to sort books alphabetically by Title
-void searchBookByTitle() {
-    cin.ignore();
-    string title;
-    cout << "Enter Title to search: ";
-    getline(cin, title);
-
-    for (int i = 0; i < totalBooks; i++) {
-        if (books[i].title == title) {
-            cout << "\n---Book Found!---\n";
-            cout << "ISBN: " << books[i].isbn << endl;
-            cout << "Author: " << books[i].author << endl;
-            cout << "Publisher: " << books[i].publisher << endl;
-            cout << "Copies: " << books[i].copies << endl;
-            cout << "Edition: " << books[i].edition << endl;
-            return;
-        }
-    }
-    cout << "\nOops! Book not found. Check our title again!\n";
-}
-
-// ------------------------- SORT BY TITLE -------------------------
-// Function to sort books alphabetically by Title
-void sortByTitle() {
-    if (totalBooks < 2) {
-        cout << "\nNot enough books to sort.\n";
-        return;
-    }
-
-    for (int i = 0; i < totalBooks - 1; i++) {
-        for (int j = i + 1; j < totalBooks; j++) {
-            if (books[i].title > books[j].title) {
-                swap(books[i], books[j]);
-            }
-        }
-    }
-    saveToFile();
-    cout << "\nBooks sorted by title!\n";
-    displayBooks();
-}
-
-// ------------------------- SORT BY EDITION -------------------------
-// Function to sort books with the same Title by Edition
-void sortByEdition() {
-    if (totalBooks < 2) {
-        cout << "Not enough books to sort.\n";
-        return;
-    }
-
-    for (int i = 0; i < totalBooks - 1; i++) {
-        for (int j = i + 1; j < totalBooks; j++) {
-            if (books[i].title == books[j].title && books[i].edition > books[j].edition) {
-                swap(books[i], books[j]);
-            }
-        }
-    }
-    saveToFile();
-    cout << "\nBooks sorted by edition!\n";
-    displayBooks();
-}
-
-// ------------------------- BORROW BOOK -------------------------
-// Function to borrow a book (decrease copies)
-// ------------------------- BORROW BOOK -------------------------
-void borrowBook() {
-    cin.ignore();
-    string isbn;
-    cout << "Enter ISBN to borrow: ";
-    getline(cin, isbn);
-
-    bool found = false; // Flag to check if book exists
-
-    for (int i = 0; i < totalBooks; i++) {
-        if (books[i].isbn == isbn) {
-            found = true;
-            if (books[i].copies > 0) {
-                books[i].copies--;  // Decrease copies
-                saveToFile();       // Save updated info to file
-                cout << "\nBook borrowed successfully!\n";
-            } else {
-                cout << "\nNo copies available!\n";
-            }
-            break;
-        }
-    }
-
-    if (!found) {
-        cout << "\nBook not found!\n";
-    }
-}
-
-
-// ------------------------- RETURN BOOK -------------------------
-// Function to return a book (increase copies)
-void returnBook() {
-    cin.ignore();
-    string isbn;
-    cout << "Enter ISBN to return: ";
-    getline(cin, isbn);
-
-    for (int i = 0; i < totalBooks; i++) {
-        if (books[i].isbn == isbn) {
-            books[i].copies++;
-            saveToFile();
-            cout << "\nBook returned successfully!\n";
-            return;
-        }
-    }
-    cout << "\nBook not found. Check your ISBN again!\n";
 }
