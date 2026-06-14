@@ -1,0 +1,388 @@
+#include <iostream>
+#include <fstream>      // For file handling
+#include <string>        // For using string datatype
+#include <algorithm>      
+using namespace std;
+
+//================================================================================//
+//                                                                                //
+//                  LIBRARY MANAGEMENT SYSTEM                                     //
+//                                                                                //
+//       Program starts:  shows menu (do-while).                                  //
+//       User chooses an option: switch-case runs the right function.             //
+//       Functions add, delete, modify, search, sort, borrow, return, display.    //
+//       Library keeps track of all books in books[MAX] array.                    //
+//       Program repeats menu until user enters 0 → exit.                         //
+//       File handling: save/load books                                          //
+//                                                                                //
+//================================================================================//
+
+
+// Maximum books that can be stored
+const int MAX = 100;
+
+// Structure to store book information
+struct Book {
+    string title;       
+    string isbn;               // Book ISBN (as string because it can have dashes)
+    string author;      
+    string publisher;   
+    int copies;         
+    int edition;        
+};
+
+
+Book books[MAX];                 // Array to store all books (global variable so all functions can access)
+int totalBooks = 0;             // Variable to keep track of total books currently in library
+
+// Function prototypes (declaring functions before main)
+void saveToFile();
+void loadFromFile();
+void addBook();
+void displayBooks();
+void deleteBook();
+void modifyBook();
+void searchBookByISBN();
+void searchBookByTitle();
+void sortByTitle();
+void sortByEdition();
+void borrowBook();
+void returnBook();
+
+// ------------------------- MAIN MENU -------------------------
+int main() {
+    loadFromFile();                         // Load books when program starts
+
+    int choice;                            //do-while(choice != 0); shows the menu repeatedly
+    do {
+       cout << "\n===== LIBRARY MANAGEMENT SYSTEM =====\n";
+        cout << "1. Add Book\n";
+        cout << "2. Delete Book\n";
+        cout << "3. Modify Book\n";
+        cout << "4. Search by ISBN\n";
+        cout << "5. Search by Title\n";
+        cout << "6. Sort by Title\n";
+        cout << "7. Sort Books (same title) by Edition\n";
+        cout << "8. Borrow Book\n";
+        cout << "9. Return Book\n";
+        cout << "10. Display All Books\n";
+        cout << "0. Exit\n";                  // until user exits 0
+        cout << "\nEnter choice: ";
+        cin >> choice;
+
+        switch (choice) {                      //switch(choice) executes the function corresponding to the choice:
+        case 1: addBook(); break;
+        case 2: deleteBook(); break;
+        case 3: modifyBook(); break;
+        case 4: searchBookByISBN(); break;
+        case 5: searchBookByTitle(); break;
+        case 6: sortByTitle(); break;
+        case 7: sortByEdition(); break;
+        case 8: borrowBook(); break;
+        case 9: returnBook(); break;
+        case 10: displayBooks(); break;
+        case 0: cout << "\nExiting...!!\nThanks for using my Library Management System :) \n"; break;
+        default: cout << "\nInvalid choice!\n";       // default: if the user enters a number not in the menu, it shows “Invalid choice!”.
+        }
+    } while (choice != 0);
+
+    // This combination (do-while + switch) is called menu-driven program.
+
+    return 0;
+}
+
+
+
+// ------------------------- SAVE TO FILE -------------------------
+void saveToFile() {
+    ofstream fout("library.txt");      // Open file for writing
+    fout << totalBooks << endl;        // Save total number of books first
+
+    for (int i = 0; i < totalBooks; i++) {
+        fout << books[i].title << endl;
+        fout << books[i].isbn << endl;
+        fout << books[i].author << endl;
+        fout << books[i].publisher << endl;
+        fout << books[i].copies << endl;
+        fout << books[i].edition << endl;
+    }
+    fout.close();                     // Close the file
+}
+
+// ------------------------- LOAD FROM FILE -------------------------
+void loadFromFile() {
+    ifstream fin("library.txt");       // Open file for reading
+    if (!fin) return;                  // If file doesn't exist, exit function
+
+    fin >> totalBooks;                 // Read total books
+    fin.ignore();                      // Ignore newline
+
+    for (int i = 0; i < totalBooks; i++) {
+        getline(fin, books[i].title);
+        getline(fin, books[i].isbn);
+        getline(fin, books[i].author);
+        getline(fin, books[i].publisher);
+        fin >> books[i].copies;
+        fin >> books[i].edition;
+        fin.ignore();                  // Remove leftover newline
+    }
+    fin.close();                       //Reads the saved file when the program starts
+}                                      // So you don’t lose data after closing the program
+
+// ------------------------- ADD BOOK -------------------------
+void addBook() {
+    if (totalBooks >= MAX) {
+        cout << "\nLibrary is full! Cannot add more books.\n";
+        return;
+    }
+
+    cin.ignore();   // clear leftover newline
+
+    cout << "Enter Title: ";
+    getline(cin, books[totalBooks].title);
+
+    // ===============================
+    // CHECK FOR DUPLICATE ISBN
+    // ===============================
+    string newISBN;
+    while (true) {
+        cout << "Enter ISBN: ";
+        getline(cin, newISBN);
+
+        bool exists = false;
+        for (int i = 0; i < totalBooks; i++) {
+            if (books[i].isbn == newISBN) {
+                exists = true;
+                break;
+            }
+        }
+
+        if (exists) {
+            cout << "\nThis ISBN already exists! Please enter a NEW ISBN.\n";
+        } 
+        else {
+            break;  // valid ISBN → exit loop
+        }
+    }
+
+    books[totalBooks].isbn = newISBN;
+
+    cout << "Enter Author: ";
+    getline(cin, books[totalBooks].author);
+
+    cout << "Enter Publisher: ";
+    getline(cin, books[totalBooks].publisher);
+
+    cout << "Enter Number of Copies: ";
+    cin >> books[totalBooks].copies;
+
+    cout << "Enter Edition: ";
+    cin >> books[totalBooks].edition;
+
+    totalBooks++;        // update count
+    saveToFile();        // save automatically
+
+    cout << "\n Book added successfully!\n";
+}
+
+
+// ------------------------- DISPLAY BOOKS -------------------------
+void displayBooks() {
+    if (totalBooks == 0) {
+        cout << "\nNo books in library. You haven't added any book!\n";
+        return;
+    }
+
+    cout << "\n===== LIST OF BOOKS =====\n";
+
+    for (int i = 0; i < totalBooks; i++) {
+        cout << "\n--Book #" << i + 1 << "--\n";
+        cout << "Title: " << books[i].title << endl;
+        cout << "ISBN: " << books[i].isbn << endl;
+        cout << "Author: " << books[i].author << endl;
+        cout << "Publisher: " << books[i].publisher << endl;
+        cout << "Copies: " << books[i].copies << endl;  // This now reflects the borrowed copies
+        cout << "Edition: " << books[i].edition << endl;
+    }
+}
+
+// ------------------------- DELETE BOOK -------------------------
+// Ask user for ISBN for deletion process.
+void deleteBook() {
+    cin.ignore();
+    string isbn;
+    cout << "Enter ISBN to delete: ";                 //  Deletes a book by ISBN
+    getline(cin, isbn);
+
+    for (int i = 0; i < totalBooks; i++) {
+        if (books[i].isbn == isbn) {
+            books[i] = books[totalBooks - 1];         // Replaces deleted book with the last book in array
+            totalBooks--;                             // Decreases total count
+            saveToFile();
+            cout << "\nBook deleted successfully!\n";
+            return;
+        }
+    }
+   cout << "\nOops! you wrote the wrong ISBN.\n";
+
+}
+
+// ------------------------- MODIFY BOOK -------------------------
+void modifyBook() {                                     // Lets you update all details
+    cin.ignore();
+    string isbn;
+    cout << "Enter ISBN to modify: ";                   // Finds a book by ISBN
+    getline(cin, isbn);
+
+    for (int i = 0; i < totalBooks; i++) {
+        if (books[i].isbn == isbn) {
+            cout << "Enter New Title: ";
+            getline(cin, books[i].title);
+            cout << "Enter New Author: ";
+            getline(cin, books[i].author);
+            cout << "Enter New Publisher: ";
+            getline(cin, books[i].publisher);
+            cout << "Enter New Number of Copies: ";
+            cin >> books[i].copies;
+            cout << "Enter New Edition: ";
+            cin >> books[i].edition;
+            saveToFile();                                // Saves updated record to file
+            cout << "\nBook updated successfully!\n";
+            return;
+        }
+    }
+    cout << "\nBook not found!\n";
+}
+
+// ------------------------- SEARCH BY ISBN -------------------------
+void searchBookByISBN() {
+    cin.ignore();
+    string isbn;
+    cout << "Enter ISBN to search: ";                   // Search exact match for ISBN or title
+    getline(cin, isbn);
+
+    for (int i = 0; i < totalBooks; i++) {
+        if (books[i].isbn == isbn) {
+            cout << "\n---Book Found!---\n";                    //  Displays relevant info if found
+            cout << "Title: " << books[i].title << endl;
+            cout << "Author: " << books[i].author << endl;
+            cout << "Publisher: " << books[i].publisher << endl;
+            cout << "Copies: " << books[i].copies << endl;
+            cout << "Edition: " << books[i].edition << endl;
+            return;
+        }
+    }
+    cout << "\nBook not found!\n";
+}
+
+// ------------------------- SEARCH BY TITLE -------------------------
+// Function to sort books alphabetically by Title
+void searchBookByTitle() {
+    cin.ignore();
+    string title;
+    cout << "Enter Title to search: ";
+    getline(cin, title);
+
+    for (int i = 0; i < totalBooks; i++) {
+        if (books[i].title == title) {
+            cout << "\n---Book Found!---\n";
+            cout << "ISBN: " << books[i].isbn << endl;
+            cout << "Author: " << books[i].author << endl;
+            cout << "Publisher: " << books[i].publisher << endl;
+            cout << "Copies: " << books[i].copies << endl;
+            cout << "Edition: " << books[i].edition << endl;
+            return;
+        }
+    }
+    cout << "\nOops! Book not found. Check our title again!\n";
+}
+
+// ------------------------- SORT BY TITLE -------------------------
+// Function to sort books alphabetically by Title
+void sortByTitle() {
+    if (totalBooks < 2) {
+        cout << "\nNot enough books to sort.\n";
+        return;
+    }
+
+    for (int i = 0; i < totalBooks - 1; i++) {
+        for (int j = i + 1; j < totalBooks; j++) {
+            if (books[i].title > books[j].title) {
+                swap(books[i], books[j]);
+            }
+        }
+    }
+    saveToFile();
+    cout << "\nBooks sorted by title!\n";
+    displayBooks();
+}
+
+// ------------------------- SORT BY EDITION -------------------------
+// Function to sort books with the same Title by Edition
+void sortByEdition() {
+    if (totalBooks < 2) {
+        cout << "Not enough books to sort.\n";
+        return;
+    }
+
+    for (int i = 0; i < totalBooks - 1; i++) {
+        for (int j = i + 1; j < totalBooks; j++) {
+            if (books[i].title == books[j].title && books[i].edition > books[j].edition) {
+                swap(books[i], books[j]);
+            }
+        }
+    }
+    saveToFile();
+    cout << "\nBooks sorted by edition!\n";
+    displayBooks();
+}
+
+// ------------------------- BORROW BOOK -------------------------
+// Function to borrow a book (decrease copies)
+// ------------------------- BORROW BOOK -------------------------
+void borrowBook() {
+    cin.ignore();
+    string isbn;
+    cout << "Enter ISBN to borrow: ";
+    getline(cin, isbn);
+
+    bool found = false; // Flag to check if book exists
+
+    for (int i = 0; i < totalBooks; i++) {
+        if (books[i].isbn == isbn) {
+            found = true;
+            if (books[i].copies > 0) {
+                books[i].copies--;  // Decrease copies
+                saveToFile();       // Save updated info to file
+                cout << "\nBook borrowed successfully!\n";
+            } else {
+                cout << "\nNo copies available!\n";
+            }
+            break;
+        }
+    }
+
+    if (!found) {
+        cout << "\nBook not found!\n";
+    }
+}
+
+
+// ------------------------- RETURN BOOK -------------------------
+// Function to return a book (increase copies)
+void returnBook() {
+    cin.ignore();
+    string isbn;
+    cout << "Enter ISBN to return: ";
+    getline(cin, isbn);
+
+    for (int i = 0; i < totalBooks; i++) {
+        if (books[i].isbn == isbn) {
+            books[i].copies++;
+            saveToFile();
+            cout << "\nBook returned successfully!\n";
+            return;
+        }
+    }
+    cout << "\nBook not found. Check your ISBN again!\n";
+}
