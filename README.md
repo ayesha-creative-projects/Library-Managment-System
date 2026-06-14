@@ -1,4 +1,4 @@
-# 📚 Library Management System (OOP Edition)
+# 📚 Library Management System 
 
 A feature-rich **console-based Library Management System** built with **C++** using **Object-Oriented Programming** principles. This system manages books, magazines, DVDs, and library members with borrowing/return functionality and late fee calculation.
 
@@ -20,22 +20,26 @@ A feature-rich **console-based Library Management System** built with **C++** us
 
 ---
 
-## 🏗️ Class Hierarchy
-LibraryResource (Base Class)
-├── Book (Rs. 5/day late fee)
-├── Magazine (Rs. 3/day late fee)
-└── DVD (Rs. 10/day late fee)
+## 🏗️ Class Hierarchy<br>
+LibraryResource (Base Class)<br>
+── Book (Rs. 5/day late fee)<br>
+── Magazine (Rs. 3/day late fee)<br>
+── DVD (Rs. 10/day late fee)<br>
+<br>
+Library (Manages all resources)<br>
+LibraryMember (Manages members and borrowed items)<br>
 
-Library (Manages all resources)
-LibraryMember (Manages members and borrowed items)
+---
 
-##🧠 What I Learned
+## 🧠 What I Learned
 
-Inheritance – Creating specialized classes from a base class
-Function Hiding – Redefining base class functions in derived classes
-this Pointer – Using it for method chaining and clarity
-Composition – Storing objects inside other objects
-Friend Functions – Granting access to private members
-Menu-Driven Systems – Using do-while + switch patterns
-Resource Management – Tracking availability and borrowing
+| Concept | Description |
+|---------|-------------|
+| **Inheritance** | Creating specialized classes from a base class |
+| **Function Hiding** | Redefining base class functions in derived classes |
+| **`this` Pointer** | Using it for method chaining and clarity |
+| **Composition** | Storing objects inside other objects |
+| **Friend Functions** | Granting access to private members |
+| **Menu-Driven Systems** | Using do-while + switch patterns |
+| **Resource Management** | Tracking availability and borrowing |
 
