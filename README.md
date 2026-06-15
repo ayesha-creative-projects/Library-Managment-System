@@ -3,7 +3,15 @@
 A feature-rich **console-based Library Management System** built with **C++** using **Object-Oriented Programming** principles. This system manages books, magazines, DVDs, and library members with borrowing/return functionality and late fee calculation.
 
 ---
+## ✨ Technologies
 
+- **C++ 17**
+- **OOP (Classes, Inheritance, Encapsulation)**
+- **File Handling** (`<fstream>`)
+- **Standard Library** (`<iostream>`, `<string>`)
+- **Structures** (`struct`)
+
+---
 ## ✨ Features
 
 | Feature | Description |
@@ -20,16 +28,35 @@ A feature-rich **console-based Library Management System** built with **C++** us
 
 ---
 
-## 🏗️ Class Hierarchy<br>
-LibraryResource (Base Class)<br>
-── Book (Rs. 5/day late fee)<br>
-── Magazine (Rs. 3/day late fee)<br>
-── DVD (Rs. 10/day late fee)<br>
-<br>
-Library (Manages all resources)<br>
-LibraryMember (Manages members and borrowed items)<br>
+## 📍 The Process
+
+I wanted to build a complete library system that feels real and useful. Started with basic add/display functions, but realized a real library needs proper search, sorting, and borrowing features. The unique ISBN validation prevents duplicate entries, while the sort functions help organize the catalog. The borrow/return system tracks available copies in real-time. File handling ensures no data is lost between sessions. Built the whole thing with OOP principles so each component (books, members, transactions) works independently while sharing the same data structure.
 
 ---
+
+## 🎯 Component Architecture
+
+- **Book Structure** - Stores title, ISBN, author, publisher, copies, edition
+- **addBook()** - Validates ISBN uniqueness before adding
+- **deleteBook()** - Finds and removes book by ISBN
+- **modifyBook()** - Updates all book fields
+- **searchByISBN() / searchByTitle()** - Linear search through array
+- **sortByTitle()** - Bubble sort algorithm for alphabetical order
+- **sortByEdition()** - Sorts same-title books by edition
+- **borrowBook() / returnBook()** - Modifies copy count with validation
+- **saveToFile() / loadFromFile()** - Persistent storage using fstream
+
+---
+
+## 🚦 Running the Project
+
+1. Clone the repository
+2. Compile: `g++ library_system.cpp -o library`
+3. Run: `./library`
+4. Follow the menu-driven interface
+
+---
+
 
 ## 🧠 What I Learned
 
