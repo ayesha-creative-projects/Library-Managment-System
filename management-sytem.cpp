@@ -9,9 +9,9 @@ const int MAX_BORROWED = 20;
 class Library;
 class LibraryMember;
 
-// ============================================================
+// ===========================================================
 //  Base Class: LibraryResource
-// ============================================================
+// ===========================================================
 class LibraryResource
 {
     friend void adminView(const Library &lib, const LibraryMember members[], int memberCount);
